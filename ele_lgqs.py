@@ -6,7 +6,7 @@ import re
 import time
 import requests
 from urllib.parse import urlencode, quote
-# import execjs
+import execjs
 import tempfile
 import subprocess
 
@@ -17,26 +17,21 @@ ck = ''
 import json
 import random
 import string
-import base64
-
+import base64  
 
 def rsa_encrypt(public_key_pem, data_str):
     url = 'http://mzkj666.cn:9324/encrypt'
     data = {
-        'public_key_pem': public_key_pem,
-        'data_str': data_str
+        'publicKeyPem': public_key_pem,
+        'dataStr': data_str
     }
-
-    try:
-        response = requests.post(url, json=data)
-        response.raise_for_status()
-    except requests.exceptions.RequestException as e:
-        return f"Request failed: {str(e)}"
-
+    
+    response = requests.post(url, json=data)
     if response.status_code == 200:
-        return response.json().get('signature')
+        return response.json()['encryptedData']
     else:
-        return response.json().get('error', 'Unknown error')
+        return response.json()['encryptedData']
+
 def generate_random_string(length=50):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
@@ -44,15 +39,11 @@ def generate_random_string(length=50):
 def get_ck_usid(ck1):
     key_value_pairs = ck1.split(";")
     for pair in key_value_pairs:
-        if "=" in pair:
-            key, value = pair.split("=", 1)
-            if key == "USERID":
-                return value
+        key, value = pair.split("=")
+        if key == "USERID":
+            return value
         else:
-            print(f"❎错误的 Cookie 格式: {pair}")
-    return '账号'
-
-
+            return '账号'
 
 def hbh5tk(tk_cookie, enc_cookie, cookie_str):
     """
@@ -98,9 +89,6 @@ def tq1(txt):
     """
     try:
         txt = txt.replace(" ", "")
-        txt = txt.replace("zhuli;", "")
-        txt = txt.replace("chushi;", "")
-        txt = txt.replace("zhuli", "")
         if txt[-1] != ';':
             txt += ';'
         pairs = txt.split(";")[:-1]
@@ -146,7 +134,6 @@ def check_cookie(cookie):
         print("解析ck错误")
         return None
 
-
 class TYT:
     def __init__(self, cki):
         self.name = None
@@ -176,7 +163,7 @@ class TYT:
 
         try:
             r = requests.post(
-                "接口",
+                "http://192.168.1.124:1888/api/getXSign",
                 json=body
             )
             r.raise_for_status()
@@ -257,13 +244,13 @@ class TYT:
             url = f"https://guide-acs.m.taobao.com/h5/{api}/{v}/?jsv=2.6.1&appKey=12574478&t={timestamp}&sign={sign}&api={api}&v={v}&type=originaljson&dataType=json"
             data1 = urlencode({'data': data_str})
             r = requests.post(url, headers=headers, data=data1)
-            if r.json()['ret'][0] in ['SUCCESS::接口调用成功', 'SUCCESS::调用成功']:
+            if r.json()['ret'][0] in ['SUCCESS::接口调用成功','SUCCESS::调用成功']:
                 return r
             else:
                 # print('请求失败：',r.text)
                 return f"请求异常：{r.json()['ret'][0]}"
         except Exception as e:
-            print('请求出现错误：', e)
+            print('请求出现错误：',e)
             return None
 
     def login(self):
@@ -300,14 +287,13 @@ class TYT:
         except Exception as e:
             print(f"[{self.name1}] ❎登录失败: {e}")
             return False
-
+    
     def task(self):
         print(f"[{self.name1}] 开始获取游戏任务")
         api = 'mtop.ele.biz.growth.task.core.querytask'
-        data = json.dumps(
-            {"bizScene": "BLUE_KNIGHT_PARKOUR", "accountPlan": "HAVANA_COMMON", "missionCollectionId": "1322",
-             "locationInfos": "[\"{\\\"lng\\\":\\\"120.220572\\\",\\\"lat\\\":\\\"30.178625\\\"}\"]"
-             })
+        data = json.dumps({"bizScene": "BLUE_KNIGHT_PARKOUR", "accountPlan": "HAVANA_COMMON", "missionCollectionId": "1322",
+                           "locationInfos": "[\"{\\\"lng\\\":\\\"120.220572\\\",\\\"lat\\\":\\\"30.178625\\\"}\"]"
+                           })
         try:
             res = self.xsign_req(api, data, "1.0")
             if res.json()['ret'][0] == 'SUCCESS::接口调用成功':
@@ -332,12 +318,12 @@ class TYT:
                                 if '异常' not in res1:
                                     print(f'[{self.name}] ✅任务完成成功！')
                                 else:
-                                    print(f'[{self.name}] ✅任务完成出错：', res1)
+                                    print(f'[{self.name}] ✅任务完成出错：',res1)
                                     break
                             else:
-                                print(f'[{self.name}] ✅任务完成失败：', res1)
+                                print(f'[{self.name}] ✅任务完成失败：',res1)
                         except Exception as e:
-                            print(f"[{self.name}] ❎请求失败：", e)
+                            print(f"[{self.name}] ❎请求失败：",e)
                             return None
         except Exception as e:
             print(f"[{self.name}] ❎请求失败1")
@@ -358,12 +344,11 @@ class TYT:
                         if o['rewardStatus'] == "TODO" and o['status'] == "FINISH":
                             if o['rewards'][0]['name'] == "次数":
                                 api1 = 'mtop.ele.biz.growth.task.core.receiveprize'
-                                data1 = {"bizScene": "BLUE_KNIGHT_PARKOUR", "missionCollectionId": "1322",
-                                         "missionId": "23414001",
-                                         "locationInfos": "[\"{\\\"lng\\\":\\\"105.754353\\\",\\\"lat\\\":\\\"30.600449\\\"}\"]",
-                                         "accountPlan": "HAVANA_COMMON",
-                                         "count": o['stageCount'],
-                                         "asac": "2A23B18B2HYMDVFDDOXP2F"}
+                                data1 = {"bizScene": "BLUE_KNIGHT_PARKOUR", "missionCollectionId": "1322", "missionId": "23414001",
+                                     "locationInfos": "[\"{\\\"lng\\\":\\\"105.754353\\\",\\\"lat\\\":\\\"30.600449\\\"}\"]",
+                                     "accountPlan":"HAVANA_COMMON",
+                                     "count": o['stageCount'],
+                                       "asac": "2A23B18B2HYMDVFDDOXP2F"}
                                 try:
                                     res1 = self.no_xsign_req(api1, data1, "1.0")
                                     if (res1 is None) or (res1 and '异常' in res1):
@@ -381,7 +366,7 @@ class TYT:
                                     print(f'请求错误')
                                     return None
         except Exception as e:
-            print(f"[{self.name}] ❎请求失败：", e)
+            print(f"[{self.name}] ❎请求失败：",e)    
 
     def query_game_info(self):
         api = 'mtop.alsc.playgame.mini.game.index'
@@ -411,13 +396,13 @@ class TYT:
     def start_game(self):
         api = 'mtop.alsc.playgame.mini.game.play.start'
         data = json.dumps({
-            "bizScene": "BLUE_KNIGHT_PARKOUR",
+            "bizScene":"BLUE_KNIGHT_PARKOUR",
             "latitude": "30.17862595617771",
             "longitude": "120.22057268768549",
-            "actId": "20240204214413716190833090",
-            "gamePattern": "REWARD_PATTERN",
-            "extParams": "{\"changeVersion\":\"20240412\"}"
-        })
+            "actId":"20240204214413716190833090",
+            "gamePattern":"REWARD_PATTERN",
+            "extParams":"{\"changeVersion\":\"20240412\"}"
+            })
         try:
             res = self.xsign_req(api, data, "1.0")
             if res.json()['ret'][0] == 'SUCCESS::调用成功':
@@ -425,22 +410,22 @@ class TYT:
                     self.curGameId = res.json()["data"]["data"]['curGameId']
                     self.gamePublicKey = res.json()["data"]["data"]['extInfo']['pk']
             else:
-                print(f"[{self.name}] ❌开始游戏失败,原因:", res.json()['ret'][0])
+                print(f"[{self.name}] ❌开始游戏失败,原因:",res.json()['ret'][0])
         except Exception as e:
             print(f"[{self.name}] ❎开始游戏失败")
 
-    def settle_game(self, grantAmount):
+    def settle_game(self,grantAmount):
         api = 'mtop.alsc.playgame.mini.game.play.settle'
         body = {
-            "bizScene": "BLUE_KNIGHT_PARKOUR",
+            "bizScene":"BLUE_KNIGHT_PARKOUR",
             "latitude": "30.17862595617771",
             "longitude": "120.22057268768549",
-            "curGameId": self.curGameId,
-            "actId": "20240204214413716190833090",
-            "grantAmount": rsa_encrypt(self.gamePublicKey, str(grantAmount)),
-            "propertyId": self.propertyId,
-            "extParams": "{\"changeVersion\":\"20240412\"}"
-        }
+            "curGameId":self.curGameId,
+            "actId":"20240204214413716190833090",
+            "grantAmount":rsa_encrypt(self.gamePublicKey, str(grantAmount)),
+            "propertyId":self.propertyId,
+            "extParams":"{\"changeVersion\":\"20240412\"}"
+            }
         data = json.dumps(body)
         try:
             res = self.xsign_req(api, data, "1.0")
@@ -464,7 +449,6 @@ class TYT:
             return None
 
     def main(self):
-        self.start_game()
         if self.login():
             self.query_game_info()
             print(f"----尝试领取游戏次数----")
@@ -497,3 +481,5 @@ if __name__ == '__main__':
     for i, ck in enumerate(cookies):
         print(f"======开始第{i + 1}个账号======")
         TYT(ck).main()
+        print("2s后进行下一个账号")
+        time.sleep(2)
